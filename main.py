@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 from threading import Lock
-from flask import Flask, render_template, session
-from flask_socketio import SocketIO, emit, disconnect
+from flask import Flask, render_template
+from flask_socketio import SocketIO, emit
 
 # Set this variable to "threading", "eventlet" or "gevent" to test the
 # different async modes, or leave it set to None for the application to choose
@@ -29,12 +29,13 @@ class IMU(object):
     def run(self):
         while True:
             socketio.sleep(self.update_rate)
-            socketio.emit('my_response',
-                        {'data': 'Server generated event', 'count': self.count},
+            socketio.emit('server_response',
+                        {'data': 'Server generated event'},
             )
 
     def action(self):
         self.count += 1
+        return self.count
 
 imu = IMU()
 
@@ -46,15 +47,13 @@ def index():
 
 @socketio.on('my_event')
 def test_message(message):
-    session['receive_count'] = session.get('receive_count', 0) + 1
-    emit('my_response',
-         {'data': message['data'], 'count': session['receive_count']})
+    emit('server_response', {'data': message['data']})
 
 
 @socketio.on('action_request')
 def action_request():
-    imu.action()
-    emit('my_response', {'data': 'Action was called', 'count': 0})
+    count = imu.action()
+    emit('server_response', {'data': 'Action was called {} times'.format(count)})
 
 
 @socketio.on('my_ping')
@@ -66,7 +65,7 @@ def ping_pong():
 def test_connect():
     global imu
     imu.start()
-    emit('my_response', {'data': 'Connected', 'count': 0})
+    emit('server_response', {'data': 'Client is connected'})
 
 
 @socketio.on('disconnect')
