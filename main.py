@@ -63,6 +63,7 @@ def ping_pong():
 
 @socketio.on('connect')
 def test_connect():
+    print('Client connected')
     global imu
     imu.start()
     emit('server_response', {'data': 'Client is connected'})
@@ -74,4 +75,4 @@ def test_disconnect():
 
 
 if __name__ == '__main__':
-    socketio.run(app, debug=True)
+    socketio.run(app, host= '0.0.0.0', debug=True)

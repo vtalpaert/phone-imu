@@ -6,23 +6,10 @@
     <script src="//cdnjs.cloudflare.com/ajax/libs/socket.io/2.2.0/socket.io.js" integrity="sha256-yr4fRk/GU1ehYJPAs8P4JlTgu0Hdsp4ZKrx8bDEDC3I=" crossorigin="anonymous"></script>
     <script type="text/javascript" charset="utf-8">
         $(document).ready(function() {
-            // Use a "/test" namespace.
-            // An application can open a connection on multiple namespaces, and
-            // Socket.IO will multiplex all those connections on a single
-            // physical channel. If you don't care about multiple channels, you
-            // can set the namespace to an empty string.
-
             // Connect to the Socket.IO server.
             // The connection URL has the following format, relative to the current page:
             //     http[s]://<domain>:<port>[/<namespace>]
             var socket = io();
-
-            // Event handler for new connections.
-            // The callback function is invoked when a connection with the
-            // server is established.
-            socket.on('connect', function() {
-                socket.emit('my_event', {data: 'I\'m connected!'});
-            });
 
             // Event handler for server sent data.
             // The callback function is invoked whenever the server emits data
@@ -66,6 +53,72 @@
                 socket.emit('action_request');
                 return false;
             });
+
+
+            // Get device motion
+            if ('LinearAccelerationSensor' in window && 'Gyroscope' in window) {
+                document.getElementById('moApi').innerHTML = 'Generic Sensor API';
+
+                let lastReadingTimestamp;
+                let accelerometer = new LinearAccelerationSensor();
+                accelerometer.addEventListener('reading', e => {
+                    if (lastReadingTimestamp) {
+                        intervalHandler(Math.round(accelerometer.timestamp - lastReadingTimestamp));
+                    }
+                    lastReadingTimestamp = accelerometer.timestamp
+                    accelerationHandler(accelerometer, 'moAccel');
+                });
+                accelerometer.start();
+
+                if ('GravitySensor' in window) {
+                    let gravity = new GravitySensor();
+                    gravity.addEventListener('reading', e => accelerationHandler(gravity, 'moAccelGrav'));
+                    gravity.start();
+                }
+
+                let gyroscope = new Gyroscope();
+                gyroscope.addEventListener('reading', e => rotationHandler({
+                    alpha: gyroscope.x,
+                    beta: gyroscope.y,
+                    gamma: gyroscope.z
+                }));
+                gyroscope.start();
+
+            } else if ('DeviceMotionEvent' in window) {
+                document.getElementById('moApi').innerHTML = 'Device Motion API';
+
+                var onDeviceMotion = function (eventData) {
+                    accelerationHandler(eventData.acceleration, 'moAccel');
+                    accelerationHandler(eventData.accelerationIncludingGravity, 'moAccelGrav');
+                    rotationHandler(eventData.rotationRate);
+                    intervalHandler(eventData.interval);
+                }
+                window.addEventListener('devicemotion', onDeviceMotion, false);
+            } else {
+                document.getElementById('moApi').innerHTML = 'No Accelerometer & Gyroscope API available';
+            }
+
+            function accelerationHandler(acceleration, targetId) {
+                var info, xyz = "[X, Y, Z]";
+
+                info = xyz.replace("X", acceleration.x && acceleration.x.toFixed(3));
+                info = info.replace("Y", acceleration.y && acceleration.y.toFixed(3));
+                info = info.replace("Z", acceleration.z && acceleration.z.toFixed(3));
+                document.getElementById(targetId).innerHTML = info;
+            }
+
+            function rotationHandler(rotation) {
+                var info, xyz = "[X, Y, Z]";
+
+                info = xyz.replace("X", rotation.alpha && rotation.alpha.toFixed(3));
+                info = info.replace("Y", rotation.beta && rotation.beta.toFixed(3));
+                info = info.replace("Z", rotation.gamma && rotation.gamma.toFixed(3));
+                document.getElementById("moRotation").innerHTML = info;
+            }
+
+            function intervalHandler(interval) {
+                document.getElementById("moInterval").innerHTML = interval;
+            }
         });
     </script>
 </head>
@@ -74,13 +127,34 @@
     <p>Async mode is: <b>{{ async_mode }}</b></p>
     <p>Average ping/pong latency: <b><span id="ping-pong"></span>ms</b></p>
     <h2>Send:</h2>
-    <form id="emit" method="POST" action='#'>
-        <input type="text" name="emit_data" id="emit_data" placeholder="Message">
-        <input type="submit" value="Echo">
-    </form>
+
     <form id="action" method="POST" action="#">
         <input type="submit" value="Action">
     </form>
+
+    <table>
+        <tr>
+            <td>API used</td>
+            <td id="moApi"></td>
+        </tr>
+        <tr>
+            <td>linear acceleration (excl. gravity)</td>
+            <td id="moAccel"></td>
+        </tr>
+        <tr>
+            <td>acceleration incl. gravity</td>
+            <td id="moAccelGrav"></td>
+        </tr>
+        <tr>
+            <td>rotation rate</td>
+            <td id="moRotation"></td>
+        </tr>
+        <tr>
+            <td>interval (ms)</td>
+            <td id="moInterval"></td>
+        </tr>
+    </table>
+
     <h2>Receive:</h2>
     <div id="log"></div>
 </body>
