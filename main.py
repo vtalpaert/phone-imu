@@ -19,11 +19,11 @@ class IMU(object):
 
     def __init__(self):
         self.thread = None
-        self.thread_lock = Lock()
-        self.latency_lock = Lock()
-        self.read_queue_lock = Lock()
+        self.thread_lock = Lock()  # ensure run() is running only one time
+        self.latency_lock = Lock()  # ensure only one latency test at a time
+        self.read_queue_lock = Lock()  # ensure only one task is reading values at a time (competing latency tests and run())
         self.count = 0
-        self.data_queue = Queue(maxsize=0)  # infinite queue
+        self.data_queue = Queue(maxsize=0)  # maxsize=0 is infinite size queue
 
     def get_last_data(self):
         """Will clear the queue and keep only last element"""
@@ -45,7 +45,6 @@ class IMU(object):
         return self.data_queue.get()
 
     def add_data(self, data):
-        print('got data')
         if data[1:] != [0, 0, 0, 0, 0, 0]:  # use a slice to ingore the timestamp
             self.data_queue.put(data)
 
