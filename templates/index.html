@@ -16,7 +16,7 @@
             // to the client. The data is then displayed in the "Received"
             // section of the page.
             socket.on('server_response', function(msg, cb) {
-                $('#log').append('<br>' + $('<div/>').text('Received: ' + msg.data).html());
+                $('#log').append('<br>' + $('<div/>').text('Received: ' + msg.text).html());
                 if (cb)
                     cb();
             });
@@ -44,18 +44,24 @@
                 $('#ping-pong').text(Math.round(10 * sum / ping_pong_times.length) / 10);
             });
 
-            $('form#emit').submit(function(event) {
-                socket.emit('my_event', {data: $('#emit_data').val()});
-                return false;
-            });
-
             $('form#action').submit(function(event) {
                 socket.emit('action_request');
                 return false;
             });
 
+            // Send device motion
+            var ax = 0;
+            var ay = 0;
+            var az = 0;
+            var gx = 0;
+            var gy = 0;
+            var gz = 0;
 
-            // Get device motion
+            window.setInterval(function() {
+                socket.emit('incoming_data', {data: [Date.now(), ax, ay, az, gx, gy, gz]});
+            }, 10); // 100 Hz
+
+            // Update device motion
             if ('LinearAccelerationSensor' in window && 'Gyroscope' in window) {
                 document.getElementById('moApi').innerHTML = 'Generic Sensor API';
 
@@ -100,6 +106,9 @@
 
             function accelerationHandler(acceleration, targetId) {
                 var info, xyz = "[X, Y, Z]";
+                ax = acceleration.x;
+                ay = acceleration.y;
+                az = acceleration.z;
 
                 info = xyz.replace("X", acceleration.x && acceleration.x.toFixed(3));
                 info = info.replace("Y", acceleration.y && acceleration.y.toFixed(3));
@@ -109,6 +118,9 @@
 
             function rotationHandler(rotation) {
                 var info, xyz = "[X, Y, Z]";
+                gx = rotation.alpha;
+                gy = rotation.beta;
+                gz = rotation.gamma;
 
                 info = xyz.replace("X", rotation.alpha && rotation.alpha.toFixed(3));
                 info = info.replace("Y", rotation.beta && rotation.beta.toFixed(3));
