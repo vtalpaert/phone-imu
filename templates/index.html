@@ -12,36 +12,21 @@
             var socket = io();
 
             // Event handler for server sent data.
-            // The callback function is invoked whenever the server emits data
-            // to the client. The data is then displayed in the "Received"
-            // section of the page.
             socket.on('server_response', function(msg, cb) {
-                $('#log').append('<br>' + $('<div/>').text('Received: ' + msg.text).html());
+                $('#log').append('<br>' + $('<div/>').text('Server: ' + msg.text).html());
                 if (cb)
                     cb();
             });
 
-            // Interval function that tests message latency by sending a "ping"
-            // message. The server then responds with a "pong" message and the
-            // round trip time is measured.
-            var ping_pong_times = [];
-            var start_time;
-            window.setInterval(function() {
-                start_time = (new Date).getTime();
-                socket.emit('my_ping');
-            }, 1000);
+            socket.on('latency', function(msg, cb) {
+                $('#latency').text(msg.latency);
+                if (cb)
+                    cb();
+            });
 
-            // Handler for the "pong" message. When the pong is received, the
-            // time from the ping is stored, and the average of the last 30
-            // samples is average and displayed.
-            socket.on('my_pong', function() {
-                var latency = (new Date).getTime() - start_time;
-                ping_pong_times.push(latency);
-                ping_pong_times = ping_pong_times.slice(-30); // keep last 30 samples
-                var sum = 0;
-                for (var i = 0; i < ping_pong_times.length; i++)
-                    sum += ping_pong_times[i];
-                $('#ping-pong').text(Math.round(10 * sum / ping_pong_times.length) / 10);
+            $('form#latency_request').submit(function(event) {
+                socket.emit('latency_request');
+                return false;
             });
 
             $('form#action').submit(function(event) {
@@ -59,7 +44,7 @@
 
             window.setInterval(function() {
                 socket.emit('incoming_data', {data: [Date.now(), ax, ay, az, gx, gy, gz]});
-            }, 10); // 100 Hz
+            }, 20); // 100 Hz
 
             // Update device motion
             if ('LinearAccelerationSensor' in window && 'Gyroscope' in window) {
@@ -137,8 +122,12 @@
 <body>
     <h1>Phone Inertial Measurement Unit</h1>
     <p>Async mode is: <b>{{ async_mode }}</b></p>
-    <p>Average ping/pong latency: <b><span id="ping-pong"></span>ms</b></p>
+    <p>Average latency: <b><span id="latency"></span>ms</b></p>
     <h2>Send:</h2>
+
+    <form id="latency_request" method="POST" action="#">
+        <input type="submit" value="Measure latency">
+    </form>
 
     <form id="action" method="POST" action="#">
         <input type="submit" value="Action">

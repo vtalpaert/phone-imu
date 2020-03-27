@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 from threading import Lock
-from queue import Queue
-from flask import Flask, render_template
+from queue import Queue, Empty
+from flask import Flask, render_template, copy_current_request_context
 from flask_socketio import SocketIO, emit
 
 # Set this variable to "threading", "eventlet" or "gevent" to test the
@@ -15,11 +15,13 @@ socketio = SocketIO(app, async_mode=async_mode)
 
 
 class IMU(object):
-    update_rate = 0.1  # [s]
+    update_rate = 0.02  # [s]
 
     def __init__(self):
         self.thread = None
         self.thread_lock = Lock()
+        self.latency_lock = Lock()
+        self.read_queue_lock = Lock()
         self.count = 0
         self.data_queue = Queue(maxsize=0)  # infinite queue
 
@@ -43,18 +45,49 @@ class IMU(object):
         return self.data_queue.get()
 
     def add_data(self, data):
+        print('got data')
         if data[1:] != [0, 0, 0, 0, 0, 0]:  # use a slice to ingore the timestamp
             self.data_queue.put(data)
 
     def start(self):
-        with self.thread_lock:
+        with self.thread_lock:  # only one imu running at a time
             if self.thread is None:
                 self.thread = socketio.start_background_task(self.run)
 
     def run(self):
         while True:
-            #socketio.sleep(self.update_rate)
-            print('Latest data', self.get_last_data())  # will wait until data is in
+            socketio.sleep(self.update_rate)
+            locked = self.read_queue_lock.acquire(False)
+            if locked:
+                if not self.data_queue.empty():
+                    print('Latest data', self.get_last_data())  # will wait until data is in
+                self.read_queue_lock.release()
+            else:
+                print('Run is paused during latency test')
+
+    def measure_latency(self, n=50):
+        data_list = []
+        try:
+            print('Start latency measuring')
+            while True:
+                locked =  self.read_queue_lock.acquire(False)  # block the run method, otherwise they both compete for data
+                if locked:  
+                    self.data_queue.queue.clear()
+                    for i in range(n):
+                        data = self.data_queue.get(timeout=1)  # can raise Empty
+                        print('data', i, data)
+                        if not data_list or data_list[-1][1:] != data[1:]:
+                            # list was empty or exclude cases where the same data is twice in the list
+                            data_list.append(data)
+                    self.read_queue_lock.release()
+                    deltas = [data2[0] - data1[0] for data2, data1 in zip(data_list[1:], data_list[:-1])]
+                    latency = sum(deltas) / n
+                    return latency
+                else:
+                    print('You should not see this message more than once')
+        except Empty:
+            # signal an error
+            return -1
 
     def action(self):
         self.count += 1
@@ -71,25 +104,36 @@ def index():
 @socketio.on('incoming_data')
 def test_message(message):
     imu.add_data(message['data'])
-    emit('server_response', {'text': 'Got {}'.format(message['data'])})
+    #emit('server_response', {'text': 'Got {}'.format(message['data'])})
+
+
+@socketio.on('latency_request')
+def latency_request():
+    latency_request_locked = imu.latency_lock.acquire(False)
+    if latency_request_locked:
+        # only start one latency task at a time
+        @copy_current_request_context  # you need this decorator, otherwise emit does not know who to send the message to
+        def send_latency():
+            latency = imu.measure_latency()
+            emit('latency', {'latency': latency})
+            imu.latency_lock.release()
+        socketio.start_background_task(send_latency)
+        emit('server_response', {'text': 'I started a latency test'})
+    else:
+        emit('server_response', {'text': 'The previous latency test is still running'})
 
 
 @socketio.on('action_request')
 def action_request():
     """Example of how to add an action on the IMU object"""
+    print('Action called')
     count = imu.action()
     emit('server_response', {'text': 'Action was called {} times'.format(count)})
-
-
-@socketio.on('my_ping')
-def ping_pong():
-    emit('my_pong')
 
 
 @socketio.on('connect')
 def test_connect():
     print('Client connected')
-    global imu
     imu.start()
     emit('server_response', {'text': 'Client is connected'})
 
