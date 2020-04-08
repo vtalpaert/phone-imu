@@ -23,16 +23,17 @@ class IMU(object):
 
     def __init__(self):
         self.thread = None
-        self.thread_lock = Lock()  # ensure run() is running only one time
+        self.thread_lock = Lock()  # ensure start() is executed only one at a time
         self.latency_lock = Lock()  # ensure only one latency test at a time
         self.read_queue_lock = Lock()  # ensure only one task is reading values at a time (competing latency tests and run())
-        self.count = 0
+        self.count = 0  # counter for action_request
         self.data_queue = Queue(maxsize=0)  # maxsize=0 is infinite size queue
 
     def get_last_data(self):
         """Will clear the queue and keep only last element"""
         data = self.data_queue.get()  # waiting here until some data is in
         while not self.data_queue.empty():
+            # update data with the latest value
             data = self.data_queue.get()  # consume queue
         return data
 
@@ -50,20 +51,28 @@ class IMU(object):
 
     def add_data(self, data):
         if data[1:] != [0, 0, 0, 0, 0, 0]:  # use a slice to ingore the timestamp
+            # pass empty data
             self.data_queue.put(data)
 
     def start(self):
         with self.thread_lock:  # only one imu running at a time
             if self.thread is None:
                 self.thread = socketio.start_background_task(self.run)
+                print('Start thread', self.thread)
+
+    def is_started(self):
+        return self.thread is not None
 
     def run(self):
+        print('Running loop')
         while True:
+            # continuously runs
             socketio.sleep(self.update_rate)
             locked = self.read_queue_lock.acquire(False)
             if locked:
                 if not self.data_queue.empty():
                     print('Latest data', self.get_last_data())  # will wait until data is in
+                    # TODO do something with data, eg calculate mean over last 100 values (using a deque)
                 self.read_queue_lock.release()
             else:
                 print('Run is paused during latency test')
@@ -115,12 +124,17 @@ def latency_request():
     latency_request_locked = imu.latency_lock.acquire(False)
     if latency_request_locked:
         # only start one latency task at a time
-        @copy_current_request_context  # you need this decorator, otherwise emit does not know who to send the message to
+        @copy_current_request_context  # you need this decorator, otherwise emit does not know who to send the message back to
         def send_latency():
+            print('start latency')
             latency = imu.measure_latency()
+            # send to client the result
             emit('latency', {'latency': latency})
+            # release lock unblocking new latency tests
             imu.latency_lock.release()
+        # run function in background since it can take time
         socketio.start_background_task(send_latency)
+        # emit acknowledgment before result is in
         emit('server_response', {'text': 'I started a latency test'})
     else:
         emit('server_response', {'text': 'The previous latency test is still running'})

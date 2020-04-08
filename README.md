@@ -11,6 +11,7 @@ This code declares a webserver to run on your computer. Open the page on your mo
 1. Note your local IP address, such as `192.168.1.64` for me. On linux, use `ifconfig`
 1. Run server with `python main.py`
 1. On your device, open the address `192.168.1.64:5000` to visit the server homepage
+1. On some browser, the timestamp has a reduced precision ([explanation](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/now)), on Firefox you need for example to disable `privacy.reduceTimerPrecision` in `about:config`
 
 ## Sources
 
