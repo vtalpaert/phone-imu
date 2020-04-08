@@ -1,6 +1,5 @@
 # python modules
 import unittest
-import queue
 import time
 import random
 
@@ -10,20 +9,6 @@ import flask_socketio
 # local code
 import server
 
-
-random.seed(1)
-
-
-def get_random_device_data():
-    return [
-        int(1000 * time.time()),  # [ms]
-        random.gauss(0, 1),  # ax
-        random.gauss(0, 1),  # ay
-        random.gauss(0, 1),  # az
-        random.gauss(0, 1),  # gx
-        random.gauss(0, 1),  # gy
-        random.gauss(0, 1),  # gz
-    ]
 
 def get_test_clients():
     server.app.testing = True
@@ -38,8 +23,16 @@ def get_test_clients():
 
 class TestServerCommunication(unittest.TestCase):
     def setUp(self):
+        # all test will have a client
         server.app.testing = True
         self.flask_client, self.client = get_test_clients()
+
+    @classmethod
+    def tearDownClass(self):
+        # after all tests are done, close imu background thread
+        # do not close after each test since the imu object is shared
+        # and unique for the server
+        server.imu.close()
 
     def test_home(self):
         result = self.flask_client.get('/')
@@ -65,19 +58,7 @@ class TestServerCommunication(unittest.TestCase):
             self.assertEqual(received[-1]['args'][0]['count'], i)
 
     def test_emit_data(self):
-        self.client.emit('incoming_data', {'data': get_random_device_data()})
-
-    def test_latency_request(self):
-        self.client.emit('latency_request')
-        received = self.client.get_received()
-        self.assertGreaterEqual(len(received), 1)
-        self.assertEqual(received[-1]['args'][0]['text'], 'I started a latency test')
-        for i in range(50):  # TODO latency request can choose another value
-            self.client.emit('incoming_data', {'data': get_random_device_data()})
-            time.sleep(0.01)
-        received = self.client.get_received()
-        print(received)
-        self.assertGreaterEqual(len(received), 1)
+        self.client.emit('incoming_data', {'data': ['Latest data!']})
 
     @unittest.skip
     def test_latency_request_on_empty_data(self):
@@ -89,27 +70,6 @@ class TestServerCommunication(unittest.TestCase):
         # TODO request another latency test while one is already running
         self.client.emit('latency_request')
         self.client.emit('latency_request')
-
-
-class ImuTest(unittest.TestCase):
-    def setUp(self):
-        _, self.client = get_test_clients()
-        self.imu = server.imu
-
-    def test_start_background_task(self):
-        self.assertTrue(self.client.is_connected())
-        self.assertTrue(self.imu.is_started())
-
-    def test_ignore_empty_data(self):
-        self.assertRaises(queue.Empty, self.imu.data_queue.get_nowait)
-        self.client.emit('incoming_data', {'data': [1, 0, 0, 0, 0, 0, 0]})
-        self.assertRaises(queue.Empty, self.imu.data_queue.get_nowait)
-
-    def test_data_in_queue(self):
-        data_sent = get_random_device_data()
-        self.client.emit('incoming_data', {'data': data_sent})
-        data_received = self.imu.data_queue.get(timeout=1)
-        self.assertEqual(data_sent, data_received)
 
 
 if __name__ == '__main__':
