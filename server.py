@@ -1,6 +1,10 @@
 #!/usr/bin/env python
+
+# python base modules
 from threading import Lock
 from queue import Queue, Empty
+
+# dependencies
 from flask import Flask, render_template, copy_current_request_context
 from flask_socketio import SocketIO, emit
 
@@ -127,7 +131,10 @@ def action_request():
     """Example of how to add an action on the IMU object"""
     print('Action called')
     count = imu.action()
-    emit('server_response', {'text': 'Action was called {} times'.format(count)})
+    emit('server_response', {
+        'text': 'Action was called {} times'.format(count),
+        'count': count
+    })
 
 
 @socketio.on('connect')
