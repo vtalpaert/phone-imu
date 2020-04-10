@@ -80,11 +80,12 @@ Deadline April 16th. In `imu.py`, change the method `run` to :
 
 1. calculate mean over last 100 values (use get_first_data in this case). Make a commit and comment on github/gitlab to the commit the output
 1. calculate mean and std of time difference between two samples (with get_first_data as well). Comment your commit with the output
-1. Write `test_imu.TestImu.test_mean_data`
 
 #### Second deliverable
 
 Deadline April 23rd. In `imu.py`, change the method `run` to :
+
+1. Write `test_imu.TestImu.test_mean_data`
 
 Will come soon (reducing delay, delay without sleep)
 
