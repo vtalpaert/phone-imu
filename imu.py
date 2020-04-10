@@ -56,8 +56,9 @@ class IMU(object):
         """This method is executed in a loop by the background thread
         """
         if not self.data_queue.empty():
-            data = self.get_last_data()  # will wait until data is in
-            print('Latest data', data)
+            data = self.get_first_data()  # will wait until data is in
+            print('Data', data)
+
             # TODO do something with data, examples:
             # 1. calculate mean over last 100 values (use get_first_data in this case)
             # 2. calculate mean and std of time difference between two samples (with get_first_data)

@@ -78,16 +78,63 @@ Preparations:
 
 Deadline April 16th. In `imu.py`, change the method `run` to :
 
-1. calculate mean over last 100 values (use get_first_data in this case). Make a commit and comment on github/gitlab to the commit the output
-1. calculate mean and std of time difference between two samples (with get_first_data as well). Comment your commit with the output
+1. calculate mean over last 100 values (use get_first_data in this case). Tip: try `deque`, the same as `list` but with fixed length
+
+    ```python
+    >>> import collections
+    >>> help(collections.deque)
+    ```
+
+1. calculate mean and std of time difference between two samples (with get_first_data as well). Tip: Define a `mean` function for clearer code, it will use the built-ins `sum` and `len`
+
+How to submit homework :
+
+1. Write some code
+1. Commit and push to your repo
+1. Your teammate pulls your modifications
+1. Your teammate writes some code as well
+1. Your teammate pushes his code
+1. You pull his code
+1. When your code completes the mean of 100 values, comment your last commit on github with a sample of the output and tag me (@vtalpaert)
+1. Same when you did the mean time difference
 
 #### Second deliverable
 
-Deadline April 23rd. In `imu.py`, change the method `run` to :
+Deadline April 23rd.
 
-1. Write `test_imu.TestImu.test_mean_data`
+Control time !
 
-Will come soon (reducing delay, delay without sleep)
+1. Pull the latest changes from my repo `git pull teacher master`.
+1. Write a test for calculating the mean on a data list, put it in `test_imu.TestImu.test_mean_data`
+1. Speed up your code ! In `imu.py` class `IMU`, change `update_rate` to 0. Now measure the new effective time delay using what you did last week. Comment your results on the commits.
+1. In `index.html` line 47. Change the interval length to 1 millisecond, try 0 as well. What happens ?
+1. Control the refresh rate of your code. Set a new non zero `update_rate`, but you can see the std of the time delay is not 0 (if it is 0, then reduce the `update_rate` again). Comment on a commit the new measured delay.
+. The reason is because in `threads.py` you have more or less :
+
+    ```python
+    self.parent.run()  # might take a few milliseconds, lets say x seconds
+    time.sleep(self.delay)  # sleeps for update_rate seconds
+    ```
+
+    so the refresh rate is `x + update_rate`. Change `threads.py` to not use `time.sleep` but instead use `time.time()`. In a loop note the start time, execute `parent.run` one time and then run a `while` loop as long as necessary :
+
+    ```python
+    start = time.time()  # write down start time
+    self.parent.run()  # do run() once
+    while is_it_time_to_move_on? :  # replace this
+        pass  # do nothing, test again if time to move on
+    ```
+
+1. Can you think of a test for this ?
+
+Control space !
+
+1. Intialize the IMU with a position at x=y=z=0
+1. In the IMU `run` function, use the acceleration to update to position by using the displacement. If you integrate the acceleration over time, you get a velocity, do it a second time and you get the relative position.
+1. Add a method to IMU to return the current position. Write a test for this.
+
+Start you final report and write down if calculating the position from the acceleration works. Why or why not ?
+calculate
 
 ### Session 2 : Lecture 5
 
