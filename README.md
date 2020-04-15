@@ -86,6 +86,11 @@ Deadline April 16th. In `imu.py`, change the method `run` to :
     ```
 
 1. calculate mean and std of time difference between two samples (with get_first_data as well). Tip: Define a `mean` function for clearer code, it will use the built-ins `sum` and `len`
+1. explain the difference between taking the mean every hundred values ('slow average'), and updating the mean at each value ('running average'). Bonus, try other smoothing functions than the mean.
+
+Example of different mean strategies :
+
+![different mean strategies](docs/different_mean_strategies.png)
 
 How to submit homework :
 
