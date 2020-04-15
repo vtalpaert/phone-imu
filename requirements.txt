@@ -1,2 +1,5 @@
 flask-socketio
 gevent-websocket
+numpy
+matplotlib
+seaborn

@@ -105,6 +105,7 @@ Deadline April 23rd.
 Control time !
 
 1. Pull the latest changes from my repo `git pull teacher master`.
+1. Are there new requirements ? `pip3 install -r requirements.txt` again.
 1. Write a test for calculating the mean on a data list, put it in `test_imu.TestImu.test_mean_data`
 1. Speed up your code ! In `imu.py` class `IMU`, change `update_rate` to 0. Now measure the new effective time delay using what you did last week. Comment your results on the commits.
 1. In `index.html` line 47. Change the interval length to 1 millisecond, try 0 as well. What happens ?
