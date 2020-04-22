@@ -112,17 +112,17 @@ Control time !
 1. Pull the latest changes from my repo `git pull teacher master`.
 1. Are there new requirements ? `pip3 install -r requirements.txt` again.
 1. Write a test for calculating the mean on a data list, put it in `test_imu.TestImu.test_mean_data`
-1. Speed up your code ! In `imu.py` class `IMU`, change `update_rate` to 0. Now measure the new effective time delay using what you did last week. Comment your results on the commits.
+1. Speed up your code ! In `imu.py` class `IMU`, change `update_delay` to 0. Now measure the new effective time delay using what you did last week. Comment your results on the commits.
 1. In `index.html` line 47. Change the interval length to 1 millisecond, try 0 as well. What happens ?
-1. Control the refresh rate of your code. Set a new non zero `update_rate`, but you can see the std of the time delay is not 0 (if it is 0, then reduce the `update_rate` again). Comment on a commit the new measured delay.
+1. Control the refresh rate of your code. Set a new non zero `update_delay`, but you can see the std of the time delay is not 0 (if it is 0, then reduce the `update_delay` again). Comment on a commit the new measured delay.
 . The reason is because in `threads.py` you have more or less :
 
     ```python
     self.parent.run()  # might take a few milliseconds, lets say x seconds
-    time.sleep(self.delay)  # sleeps for update_rate seconds
+    time.sleep(self.delay)  # sleeps for update_delay seconds
     ```
 
-    so the refresh rate is `x + update_rate`. Change `threads.py` to not use `time.sleep` but instead use `time.time()`. In a loop note the start time, execute `parent.run` one time and then run a `while` loop as long as necessary :
+    so the refresh rate is `x + update_delay`. Change `threads.py` to not use `time.sleep` but instead use `time.time()`. In a loop note the start time, execute `parent.run` one time and then run a `while` loop as long as necessary :
 
     ```python
     start = time.time()  # write down start time
@@ -139,8 +139,7 @@ Control space !
 1. In the IMU `run` function, use the acceleration to update to position by using the displacement. If you integrate the acceleration over time, you get a velocity, do it a second time and you get the relative position.
 1. Add a method to IMU to return the current position. Write a test for this.
 
-Start you final report and write down if calculating the position from the acceleration works. Why or why not ?
-calculate
+Start you final report and write down if calculating the position from the acceleration works. Why or why not ? What happens if you use the mean acceleration you calculated previously instead of the raw value ? Include the plots you make in your report.
 
 ### Session 2 : Lecture 5
 
