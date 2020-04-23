@@ -26,7 +26,7 @@ def index():
 
 
 @socketio.on('incoming_data')
-def test_message(message):
+def incoming_data(message):
     imu.add_data(message['data'])
     #emit('server_response', {'text': 'Got {}'.format(message['data'])})
 
@@ -41,14 +41,21 @@ def action_request():
 
 
 @socketio.on('connect')
-def test_connect():
+def connect():
     print('Client connected')
     #imu.start()
     emit('server_response', {'text': 'Client is connected'})
+    @copy_current_request_context
+    def set_interval(interval):
+        # this method has an identified client to emit set_interval towards thanks to copy_current_request_context
+        print('set interval to', interval)
+        emit('set_interval', {'interval': interval})
+    imu.set_interval = set_interval
+    imu.set_interval(imu.client_send_interval)
 
 
 @socketio.on('disconnect')
-def test_disconnect():
+def disconnect():
     print('Client disconnected')
 
 

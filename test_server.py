@@ -41,8 +41,9 @@ class TestServerCommunication(unittest.TestCase):
         self.assertTrue(self.client.is_connected())
         received = self.client.get_received()
         # [{'name': 'server_response', 'args': [{'text': 'Client is connected'}], 'namespace': '/'}]
-        self.assertEqual(len(received), 1)
+        self.assertEqual(len(received), 2)
         self.assertEqual(received[0]['args'][0]['text'], 'Client is connected')
+        self.assertEqual(received[1]['args'][0]['interval'], server.imu.client_send_interval)
         self.client.disconnect()
         self.assertFalse(self.client.is_connected())
 

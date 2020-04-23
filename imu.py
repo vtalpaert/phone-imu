@@ -8,15 +8,17 @@ from threads import BackgroundThread
 
 
 class IMU(object):
-    update_delay = 0.02  # [s]
+    thread_update_delay = 0.0  # [s]
+    client_send_interval = 10  # [ms]
 
     def __init__(self):
         self.data_queue = Queue(maxsize=0)  # maxsize=0 is infinite size queue
         self.is_recording = True  # start recording by default
+        self.steps = 0  # step counter
         self.start()  # start the thread immediately
 
     def start(self):
-        self.background_task = BackgroundThread(self, self.update_delay)
+        self.background_task = BackgroundThread(self, self.thread_update_delay)
         self.clear_queue()
         self.background_task.start()
 
@@ -60,7 +62,15 @@ class IMU(object):
         if not self.data_queue.empty():
             data = self.get_first_data()
             print('Data', data)
+            if self.steps == 1000:
+                self.set_interval(500)
+            self.steps += 1
 
     def action(self):
-        self.is_recording = not self.is_recording
-        return self.is_recording
+        self.is_recording = not self.is_recording  # invert value
+        return self.is_recording  # return current value
+
+    def set_interval(self, interval):
+        # this method is replaced when the client is connected (see server.py on('connect'))
+        # we do this because we don't know who the client is when this file is compiled
+        raise NotImplementedError('This method can only be called if a server is running')

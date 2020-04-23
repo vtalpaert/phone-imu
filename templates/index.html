@@ -11,16 +11,20 @@
             //     http[s]://<domain>:<port>[/<namespace>]
             var socket = io();
 
+            function logMessage(text) {
+                $('#log').append('<br>' + $('<div/>').text(text).html());
+            };
+
             // Event handler for server sent data.
             socket.on('server_response', function(msg, cb) {
-                $('#log').append('<br>' + $('<div/>').text('Server: ' + msg.text).html());
+                logMessage('Server: ' + msg.text);
                 if (cb)
                     cb();
             });
 
             $('form#action').submit(function(event) {
                 socket.emit('action_request');
-                $('#log').append('<br>' + $('<div/>').text('Client: Asked server to start/stop recording').html());
+                logMessage('Client: Asked server to start/stop recording');
                 return false;
             });
 
@@ -37,6 +41,7 @@
                 socket.emit('incoming_data', {data: [Date.now(), ax, ay, az, gx, gy, gz]});
             };
             function startSending(sendInterval) {
+                logMessage('Client: Sending data with interval ' + sendInterval + ' ms');
                 sendDataLoop = setInterval(sendData, sendInterval);
             };
             function stopSending() {
