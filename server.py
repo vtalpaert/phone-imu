@@ -31,36 +31,13 @@ def test_message(message):
     #emit('server_response', {'text': 'Got {}'.format(message['data'])})
 
 
-@socketio.on('latency_request')
-def latency_request():
-    latency_request_locked = imu.latency_lock.acquire(False)
-    if latency_request_locked:
-        # only start one latency task at a time
-        @copy_current_request_context  # you need this decorator, otherwise emit does not know who to send the message back to
-        def send_latency():
-            print('start latency')
-            latency = imu.measure_latency()
-            # send to client the result
-            emit('latency', {'latency': latency})
-            # release lock unblocking new latency tests
-            imu.latency_lock.release()
-        # run function in background since it can take time
-        socketio.start_background_task(send_latency)
-        # emit acknowledgment before result is in
-        emit('server_response', {'text': 'I started a latency test'})
-    else:
-        emit('server_response', {'text': 'The previous latency test is still running'})
-
-
 @socketio.on('action_request')
 def action_request():
-    """Example of how to add an action on the IMU object"""
-    print('Action called')
-    count = imu.action()
-    emit('server_response', {
-        'text': 'Action was called {} times'.format(count),
-        'count': count
-    })
+    is_recording = imu.action()
+    if is_recording:
+        emit('server_response', {'text': 'IMU is now recording', 'recording': True})
+    else:
+        emit('server_response', {'text': 'IMU has stopped recording', 'recording': False})
 
 
 @socketio.on('connect')

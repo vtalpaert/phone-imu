@@ -18,19 +18,9 @@
                     cb();
             });
 
-            socket.on('latency', function(msg, cb) {
-                $('#latency').text(msg.latency);
-                if (cb)
-                    cb();
-            });
-
-            $('form#latency_request').submit(function(event) {
-                socket.emit('latency_request');
-                return false;
-            });
-
             $('form#action').submit(function(event) {
                 socket.emit('action_request');
+                $('#log').append('<br>' + $('<div/>').text('Client: Asked server to start/stop recording').html());
                 return false;
             });
 
@@ -42,9 +32,21 @@
             var gy = 0;
             var gz = 0;
 
-            window.setInterval(function() {
+            var sendDataLoop;
+            function sendData() {
                 socket.emit('incoming_data', {data: [Date.now(), ax, ay, az, gx, gy, gz]});
-            }, 20); // 100 Hz
+            };
+            function startSending(sendInterval) {
+                sendDataLoop = setInterval(sendData, sendInterval);
+            };
+            function stopSending() {
+                clearInterval(sendDataLoop);
+            };
+            socket.on('set_interval', function(msg, cb) {
+                stopSending();
+                startSending(msg['interval']);
+            });
+            startSending(10);
 
             // Update device motion
             if ('LinearAccelerationSensor' in window && 'Gyroscope' in window) {
@@ -122,15 +124,10 @@
 <body>
     <h1>Phone Inertial Measurement Unit</h1>
     <p>Async mode is: <b>{{ async_mode }}</b></p>
-    <p>Average latency: <b><span id="latency"></span>ms</b></p>
     <h2>Send:</h2>
 
-    <form id="latency_request" method="POST" action="#">
-        <input type="submit" value="Measure latency">
-    </form>
-
     <form id="action" method="POST" action="#">
-        <input type="submit" value="Action">
+        <input type="submit" value="Start/Stop recording">
     </form>
 
     <table>

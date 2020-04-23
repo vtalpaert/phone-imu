@@ -55,22 +55,10 @@ class TestServerCommunication(unittest.TestCase):
             self.assertGreaterEqual(len(received), 1)
             self.assertEqual(len(received[-1]['args'][0]), 2)
             self.assertEqual(received[-1]['name'], 'server_response')
-            self.assertEqual(received[-1]['args'][0]['count'], i)
+            self.assertListEqual(list(received[-1]['args'][0].keys()), ['text', 'recording'])
 
     def test_emit_data(self):
         self.client.emit('incoming_data', {'data': ['Latest data!']})
-
-    @unittest.skip
-    def test_latency_request_on_empty_data(self):
-        # TODO we expect a timeout during the get, so latency should be -1
-        self.client.emit('latency_request')
-
-    @unittest.skip
-    def test_concurrent_latency_request(self):
-        # TODO request another latency test while one is already running
-        self.client.emit('latency_request')
-        self.client.emit('latency_request')
-
 
 if __name__ == '__main__':
     unittest.main()
