@@ -86,11 +86,13 @@ Deadline April 16th. In `imu.py`, change the method `run` to :
     ```
 
 1. calculate mean and std of time difference between two samples (with get_first_data as well). Tip: Define a `mean` function for clearer code, it will use the built-ins `sum` and `len`
-1. explain the difference between taking the mean every hundred values ('slow average'), and updating the mean at each value ('running average'). Bonus, try other smoothing functions than the mean.
+1. explain the difference between taking the mean every hundred values ('slow average'), and updating the mean at each value ('running average'). Bonus, try other smoothing functions than the mean. See bellow for example.
 
-Example of different mean strategies :
+Example of the plot to include in your report :
 
 ![different mean strategies](docs/different_mean_strategies.png)
+
+To plot this, you can use my first function from `draw.py`.
 
 How to submit homework :
 
@@ -109,20 +111,20 @@ Deadline April 23rd.
 
 Control time !
 
-1. Pull the latest changes from my repo `git pull teacher master`.
+1. Pull and merge the latest changes from my repo `git pull teacher master`.
+1. Is there an error ? Read carefully the git output, if there is a merge conflict, this is a normal and expected error. You must manually correct the conflicting files before commiting the merge
 1. Are there new requirements ? `pip3 install -r requirements.txt` again.
 1. Write a test for calculating the mean on a data list, put it in `test_imu.TestImu.test_mean_data`
-1. Speed up your code ! In `imu.py` class `IMU`, change `update_delay` to 0. Now measure the new effective time delay using what you did last week. Comment your results on the commits.
-1. In `index.html` line 47. Change the interval length to 1 millisecond, try 0 as well. What happens ?
-1. Control the refresh rate of your code. Set a new non zero `update_delay`, but you can see the std of the time delay is not 0 (if it is 0, then reduce the `update_delay` again). Comment on a commit the new measured delay.
-. The reason is because in `threads.py` you have more or less :
+1. Speed up your code ! In `imu.py` class `IMU`, change `thread_update_delay` to 0. Now measure the new effective time delay using what you did last week. Comment your results on the commits. Does it change something when you use `get_first_data` ? With `get_last_data` ?
+1. Now change `client_send_interval`. Change the interval length to 1 millisecond, try 0 as well. What happens ?
+1. Control the refresh rate of your code. Set a new non zero `thread_update_delay`, but you can see the std of the time delay is not 0 (if it is 0, then reduce the `thread_update_delay` again). Comment on a commit the new measured delay. The reason is because in `threads.py` you have more or less :
 
     ```python
     self.parent.run()  # might take a few milliseconds, lets say x seconds
     time.sleep(self.delay)  # sleeps for update_delay seconds
     ```
 
-    so the refresh rate is `x + update_delay`. Change `threads.py` to not use `time.sleep` but instead use `time.time()`. In a loop note the start time, execute `parent.run` one time and then run a `while` loop as long as necessary :
+    so the refresh rate is `x + thread_update_delay`. Change `threads.py` to not use `time.sleep` but instead use `time.time()`. In a loop note the start time, execute `parent.run` one time and then run a `while` loop as long as necessary :
 
     ```python
     start = time.time()  # write down start time
@@ -132,12 +134,18 @@ Control time !
     ```
 
 1. Can you think of a test for this ?
+1. Now we want to run the computer side code as fast as possible, so we will keep `thread_update_delay = 0`. We don't need a delay in the thread anymore. Use now only `client_send_interval` and measure the mean delta between two data pieces. Include in your report a table with different intervals (between 0 and 50ms), the mean delta and standard deviation
+1. Add to your report a plot that looks like this:
+
+    ![interval errors](docs/error_client_interval.png)
+
+    You can use the second function from the current `draw.py`. It will take care of the mean and std by itself. I used 500 measures for each interval in `[100, 50, 20, 15, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0]`. For me, 20 milliseconds seems the most stable settings.
 
 Control space !
 
 1. Intialize the IMU with a position at x=y=z=0
 1. In the IMU `run` function, use the acceleration to update to position by using the displacement. If you integrate the acceleration over time, you get a velocity, do it a second time and you get the relative position.
-1. Add a method to IMU to return the current position. Write a test for this.
+1. Add a method to IMU to return the current position. Write a test for this
 
 Start you final report and write down if calculating the position from the acceleration works. Why or why not ? What happens if you use the mean acceleration you calculated previously instead of the raw value ? Include the plots you make in your report.
 
