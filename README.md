@@ -139,7 +139,7 @@ Control time !
 
     ![interval errors](docs/error_client_interval.png)
 
-    You can use the second function from the current `draw.py`. It will take care of the mean and std by itself. I used 500 measures for each interval in `[100, 50, 20, 15, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0]`. For me, 20 milliseconds seems the most stable settings.
+    You can use the second function from the current `draw.py`. It will take care of the mean and std by itself. I used 500 measures for each interval in `[100, 50, 20, 15, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0]`. For me, 20 milliseconds seems the most stable settings. Tip: you need the same exact number of measures at each index (500 values for each interval) for the draw function to work.
 
 Control space !
 
