@@ -115,31 +115,21 @@ Control time !
 1. Is there an error ? Read carefully the git output, if there is a merge conflict, this is a normal and expected error. You must manually correct the conflicting files before commiting the merge
 1. Are there new requirements ? `pip3 install -r requirements.txt` again.
 1. Write a test for calculating the mean on a data list, put it in `test_imu.TestImu.test_mean_data`
-1. Speed up your code ! In `imu.py` class `IMU`, change `thread_update_delay` to 0. Now measure the new effective time delay using what you did last week. Comment your results on the commits. Does it change something when you use `get_first_data` ? With `get_last_data` ?
+1. Speed up your code ! In `imu.py` class `IMU`, change `thread_update_delay` to `0.01` or `0.1`. Now measure the new effective time delay using what you did last week. Comment your results on the commits. Does it change something when you use `get_first_data` ? With `get_last_data` ? Why ?
 1. Now change `client_send_interval`. Change the interval length to 1 millisecond, try 0 as well. What happens ?
-1. Control the refresh rate of your code. Set a new non zero `thread_update_delay`, but you can see the std of the time delay is not 0 (if it is 0, then reduce the `thread_update_delay` again). Comment on a commit the new measured delay. The reason is because in `threads.py` you have more or less :
-
-    ```python
-    self.parent.run()  # might take a few milliseconds, lets say x seconds
-    time.sleep(self.delay)  # sleeps for update_delay seconds
-    ```
-
-    so the refresh rate is `x + thread_update_delay`. Change `threads.py` to not use `time.sleep` but instead use `time.time()`. In a loop note the start time, execute `parent.run` one time and then run a `while` loop as long as necessary :
-
-    ```python
-    start = time.time()  # write down start time
-    self.parent.run()  # do run() once
-    while is_it_time_to_move_on? :  # replace this
-        pass  # do nothing, test again if time to move on
-    ```
-
-1. Can you think of a test for this ?
-1. Now we want to run the computer side code as fast as possible, so we will keep `thread_update_delay = 0`. We don't need a delay in the thread anymore. Use now only `client_send_interval` and measure the mean delta between two data pieces. Include in your report a table with different intervals (between 0 and 50ms), the mean delta and standard deviation
+1. (The refresh rate question does not apply anymore since I removed the separate thread, I you want to go back to this question and the `thread.py` code, use `git checkout b3128338f84efb6c3845586d089fd797e08f7433` then `git checkout -b thread-question`. Don't forget to push this new branch as well if you want me to see it)
+1. Now we want to run the computer side code as fast as possible, so we will keep `thread_update_delay = 0.01`. Use now only `client_send_interval` and measure the mean delta between two data pieces. Include in your report a table with different intervals (between 0 and 50ms), the mean delta and standard deviation
 1. Add to your report a plot that looks like this:
 
     ![interval errors](docs/error_client_interval.png)
 
     You can use the second function from the current `draw.py`. It will take care of the mean and std by itself. I used 500 measures for each interval in `[100, 50, 20, 15, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0]`. For me, 20 milliseconds seems the most stable settings. Tip: you need the same exact number of measures at each index (500 values for each interval) for the draw function to work.
+
+For your convenience, I added a live plotting tool in `draw.py`, here is me plotting 100 acceleration raw values in X, Y, and Z. Keep in mind that plotting slows your code down, so you may only call `live_plot.draw()` every 10 iterations for example.
+
+![interval errors](docs/live_plot.png)
+
+### Session 2 : Lecture 5
 
 Control space !
 
@@ -149,16 +139,12 @@ Control space !
 
 Start you final report and write down if calculating the position from the acceleration works. Why or why not ? What happens if you use the mean acceleration you calculated previously instead of the raw value ? Include the plots you make in your report.
 
-### Session 2 : Lecture 5
-
-Task 1 dimension : basic ruler
-
 ### Session 3 : Lecture 6
-
-Task 2 dimensions : circular movement
 
 ### Session 4 : Lecture 7
 
+Task 1 dimension : basic ruler
+Task 2 dimensions : circular movement
 Task 3 dimensions : free displacement
 
 ### Session 5 : Lecture 8

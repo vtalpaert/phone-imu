@@ -1,31 +1,31 @@
 # python base modules
 import threading
 from queue import Queue, Empty
-import time
+
+# dependencies
+from gevent import monkey, sleep
+monkey.patch_all()  # fix gevent "this operation would block forever" depending on async_mode from server.py
+# use sleep from gevent instead of time.sleep
 
 # local files
-from threads import BackgroundThread
+#from threads import BackgroundThread
+import draw
 
 
 class IMU(object):
-    thread_update_delay = 0.0  # [s]
-    client_send_interval = 10  # [ms]
+    thread_update_delay = 0.001  # [s]
+    client_send_interval = 20  # [ms]
+    live_plot = None  # holder
 
     def __init__(self):
         self.data_queue = Queue(maxsize=0)  # maxsize=0 is infinite size queue
         self.is_recording = True  # start recording by default
         self.steps = 0  # step counter
-        self.start()  # start the thread immediately
-
-    def start(self):
-        self.background_task = BackgroundThread(self, self.thread_update_delay)
-        self.clear_queue()
-        self.background_task.start()
+        self.live_plot = draw.LivePlot(n_values=3, title='Acceleration in (x, y, z)', ylabel='Value in [m/s²]')
 
     def close(self):
-        print('Closing background thread...')
-        self.background_task.exit_event.set()
-        time.sleep(0.1)
+        if self.live_plot is not None:
+            self.live_plot.close()
 
     def clear_queue(self):
         while not self.data_queue.empty():
@@ -40,16 +40,13 @@ class IMU(object):
         return data
 
     def get_first_data(self):
-        """Will block until new data is here
-
-        To ensure data is received quickly enough, you can try
-        try:
-            my_queue.get_nowait()
-        except queue.Emtpy:
-            pass  # do something if empty, for example reset
-        but you will need to run this inside a timed/delayed loop
-        """
         return self.data_queue.get()
+
+    def get_first_data_or_none(self):
+        try:
+            return self.data_queue.get_nowait()
+        except Empty:
+            return None
 
     def add_data(self, data):
         if data[1:] != [0, 0, 0, 0, 0, 0] and self.is_recording:  # use a slice to ingore the timestamp
@@ -59,12 +56,11 @@ class IMU(object):
     def run(self):
         """This method is executed in a loop by the background thread
         """
-        if not self.data_queue.empty():
-            data = self.get_first_data()
-            print('Data', data)
-            if self.steps == 1000:
-                self.set_interval(500)
-            self.steps += 1
+        data = self.get_first_data_or_none()
+        if data is not None:
+            self.live_plot.update(data[1:4])
+            self.live_plot.draw()
+        self.steps += 1
 
     def action(self):
         self.is_recording = not self.is_recording  # invert value

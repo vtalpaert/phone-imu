@@ -29,13 +29,6 @@ class TestImu(unittest.TestCase):
     def tearDown(self):
         self.imu.close()
 
-    def test_background_task_start_close(self):
-        print(self.imu.background_task)
-        self.imu.close()
-        print(self.imu.background_task)
-        self.imu.start()
-        print(self.imu.background_task)
-
     def test_ignore_empty_data(self):
         self.assertRaises(queue.Empty, self.imu.data_queue.get_nowait)
         self.imu.add_data([1, 0, 0, 0, 0, 0, 0])
