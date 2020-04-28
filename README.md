@@ -56,11 +56,9 @@ L7: 18 May 8.30-11.45
 
 L8: 22 May 13.30-15.30
 
-### Session 1 : Lecture 4
+### Instruction
 
 Objective: run the code, handle the data and write `test_imu.TestImu.test_mean_data`.
-
-#### Instructions
 
 Preparations:
 
@@ -74,7 +72,7 @@ Preparations:
 1. In case your repo was not empty, merge incoming commits
 1. Create environment using the install instructions below
 
-#### First deliverable
+### First deliverable
 
 Deadline April 16th. In `imu.py`, change the method `run` to :
 
@@ -105,7 +103,7 @@ How to submit homework :
 1. When your code completes the mean of 100 values, comment your last commit on github with a sample of the output and tag me (@vtalpaert)
 1. Same when you did the mean time difference
 
-#### Second deliverable
+### Second deliverable
 
 Deadline April 23rd.
 
@@ -125,29 +123,49 @@ Control time !
 
     You can use the second function from the current `draw.py`. It will take care of the mean and std by itself. I used 500 measures for each interval in `[100, 50, 20, 15, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0]`. For me, 20 milliseconds seems the most stable settings. Tip: you need the same exact number of measures at each index (500 values for each interval) for the draw function to work.
 
-For your convenience, I added a live plotting tool in `draw.py`, here is me plotting 100 acceleration raw values in X, Y, and Z. Keep in mind that plotting slows your code down, so you may only call `live_plot.draw()` every 10 iterations for example.
+### Third deliverable
 
-![interval errors](docs/live_plot.png)
-
-### Session 2 : Lecture 5
+Deadline May 5th, 2020.
 
 Control space !
 
-1. Intialize the IMU with a position at x=y=z=0
-1. In the IMU `run` function, use the acceleration to update to position by using the displacement. If you integrate the acceleration over time, you get a velocity, do it a second time and you get the relative position.
-1. Add a method to IMU to return the current position. Write a test for this
+For your convenience, I added a live plotting tool in `draw.py`, here is me plotting 100 acceleration raw values in X, Y, and Z. Keep in mind that plotting slows your code down, so you may only call `live_plot.draw()` every 10 iterations for example. Tip: use the disk button to save a clean picture, the graph will not update in the meantime.
+(To reset the code at this example, use `git checkout 783955fceae81eee06b19614b81640a66529daa3`)
 
-Start you final report and write down if calculating the position from the acceleration works. Why or why not ? What happens if you use the mean acceleration you calculated previously instead of the raw value ? Include the plots you make in your report.
+![acceleration live plot](docs/live_plot.png)
 
-### Session 3 : Lecture 6
+We will now try to find the position of the device on one axis. As you can guess, using the acceleration we should in theory be able to calculate the position, but in practice this won't work. Let's experience first hand exactly what is happening with the following instructions, and keep our observations in our final report.
 
-### Session 4 : Lecture 7
+1. Intialize the IMU with a position and velocity of 0s. Keep your device on a table or any plane surface.
+1. Visualize the acceleration, and find your X-axis by moving the phone. How does the acceleration change over time ? Is it centered on zero when immobile ? If you slightly tilt the device, is it centered on another value ? Why is the acceleration non-zero ? (Write the answers in your report)
+1. Calculate the `delta_t` the difference in two samples. For me it was not exactly my `client_send_interval` value of 20ms, but rather 21.5ms.
+1. In the IMU `run` function, use the acceleration to update the position. If you integrate the acceleration over time, you get a velocity, do it a second time and you get the relative position. I used the formula `delta_p = v * delta_t + 0.5 * a * delta_t ** 2`
+When I did it, the position would drift linearly after a very short time even if the device was not moving, see my example :
+![drift](docs/drift_example.png)
+By carefully moving the phone in a translation along the X-axis for around 20cm, then back to the initial position and so forth, I got :
+![double integration](docs/double_integration.png)
+Include your own version of this plot in your report.
+1. The first problem to solve, if that the acceleration is not necessarily centered on zero. Correct the raw value by substracting a base value. This is where your mean function may come in handy. This is loosely equivalent to using a high-pass filter if your mean is recalculated over time (so `filtered = raw - mean`)
+1. Then get rid of the noise in the acceleration with a low pass filter. If you look at the very first image on this page, you see that taking the mean is a low pass (orange vs blue). Tip : you can also update a value using `current_value = 0.1 * observed_value + 0.9 * current_value` for slow changes.
+1. Plot the raw acceleration, high-pass, low-pass and combined low and high pass values. Experiment different parameters in your filters and explain what worked best for you.
+1. With the two filters on the acceleration, I moved the phone to the left, to the right and back at the start position. I calculated the velocity and position to be :
+![final one dimension double integration](docs/one_dimension.png)
+For cleaning the velocity value, I made the assumption it would (very) slowly go back to zero over time (again, equivalent to a high pass).
+Furthermore, only specific values of acceleration are taking into account due to the cutoff frequencies of my combined filters. Looking at the orange/velocity and green/position lines, you can verify the velocity is null when the position is at a maximum. This is the kind of plot you must include in your report for this deliverable.
+
+That's it for the homework. Keep in mind the drift is bound to happen whatever you try, so you will need to restart the calculations quite often. Finding the right parameters in your filters is crucial. In the end, the parameters will work for a specific motion (in my case: 0cm, +20cm, -20cm, 0cm in approx 3 seconds). So find one you like and stick to it while tuning your parameters.
+
+### Fourth deliverable
+
+### etc
 
 Task 1 dimension : basic ruler
+
 Task 2 dimensions : circular movement
+
 Task 3 dimensions : free displacement
 
-### Session 5 : Lecture 8
+### Last deliverable
 
 Final presentations
 
