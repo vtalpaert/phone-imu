@@ -4,7 +4,7 @@ from queue import Queue, Empty
 
 # dependencies
 from gevent import monkey, sleep
-monkey.patch_all()  # fix gevent "this operation would block forever"
+monkey.patch_all()  # fix gevent "this operation would block forever" depending on async_mode from server.py
 # use sleep from gevent instead of time.sleep
 
 # local files
@@ -21,7 +21,7 @@ class IMU(object):
         self.data_queue = Queue(maxsize=0)  # maxsize=0 is infinite size queue
         self.is_recording = True  # start recording by default
         self.steps = 0  # step counter
-        self.live_plot = draw.LivePlot(True)
+        self.live_plot = draw.LivePlot(n_values=3, title='Acceleration in (x, y, z)', ylabel='Value in [m/s²]')
 
     def close(self):
         if self.live_plot is not None:
@@ -58,7 +58,7 @@ class IMU(object):
         """
         data = self.get_first_data_or_none()
         if data is not None:
-            self.live_plot.update(data[1])
+            self.live_plot.update(data[1:4])
             self.live_plot.draw()
         self.steps += 1
 
