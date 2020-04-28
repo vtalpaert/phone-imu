@@ -11,6 +11,10 @@
             //     http[s]://<domain>:<port>[/<namespace>]
             var socket = io();
 
+            socket.on('connect', function() {
+                socket.sendBuffer = [];  // empty buffer in case the server is restarted while client is still accumulating messages
+            });
+
             function logMessage(text) {
                 $('#log').append('<br>' + $('<div/>').text(text).html());
             };
@@ -46,6 +50,7 @@
             };
             function stopSending() {
                 clearInterval(sendDataLoop);
+                socket.sendBuffer = [];  // empty buffer to stop sending
             };
             socket.on('set_interval', function(msg, cb) {
                 stopSending();
