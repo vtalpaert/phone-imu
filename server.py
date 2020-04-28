@@ -3,6 +3,7 @@
 # dependencies
 from flask import Flask, render_template, copy_current_request_context
 from flask_socketio import SocketIO, emit
+from flask_apscheduler import APScheduler
 
 # local files
 from imu import IMU
@@ -10,13 +11,33 @@ from imu import IMU
 
 imu = IMU()  # unique instance of IMU
 
+
+class Config(object):
+    JOBS = [
+        {
+            'id': 'run',
+            'func': imu.run,
+            'args': (),
+            'trigger': 'interval',
+            'seconds': imu.thread_update_delay
+        }
+    ]
+
+    SCHEDULER_API_ENABLED = True
+    SECRET_KEY = 'secret!'
+
+
 # Set this variable to "threading", "eventlet" or "gevent" to test the
 # different async modes, or leave it set to None for the application to choose
 # the best option based on installed packages.
 async_mode = None
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'secret!'
+#app.config['SECRET_KEY'] = 'secret!'
+app.config.from_object(Config())
+scheduler = APScheduler()
+scheduler.init_app(app)
+scheduler.start()
 socketio = SocketIO(app, async_mode=async_mode)
 
 
@@ -43,7 +64,6 @@ def action_request():
 @socketio.on('connect')
 def connect():
     print('Client connected')
-    #imu.start()
     emit('server_response', {'text': 'Client is connected'})
     @copy_current_request_context
     def set_interval(interval):
@@ -52,6 +72,7 @@ def connect():
         emit('set_interval', {'interval': interval})
     imu.set_interval = set_interval
     imu.set_interval(imu.client_send_interval)
+    imu.clear_queue()
 
 
 @socketio.on('disconnect')
@@ -61,6 +82,6 @@ def disconnect():
 
 if __name__ == '__main__':
     try:
-        socketio.run(app, host= '0.0.0.0', debug=True)
+        socketio.run(app, use_reloader=False, host= '0.0.0.0', debug=True)
     finally:
         imu.close()  # always close IMU when script is done
