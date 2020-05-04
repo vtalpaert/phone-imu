@@ -6,6 +6,7 @@ from queue import Queue, Empty
 from gevent import monkey, sleep
 monkey.patch_all()  # fix gevent "this operation would block forever" depending on async_mode from server.py
 # use sleep from gevent instead of time.sleep
+import numpy as np
 
 # local files
 #from threads import BackgroundThread
@@ -21,7 +22,7 @@ class IMU(object):
         self.data_queue = Queue(maxsize=0)  # maxsize=0 is infinite size queue
         self.is_recording = True  # start recording by default
         self.steps = 0  # step counter
-        self.live_plot = draw.LivePlot(n_values=3, title='Acceleration in (x, y, z)', ylabel='Value in [m/s²]')
+        self.live_plot = draw.LivePlot(n_values=3, title='Absolute orientation in (x, y, z)', ylabel='Value in [deg]', ylim_low=-180, ylim_high=360)
 
     def close(self):
         if self.live_plot is not None:
@@ -49,7 +50,7 @@ class IMU(object):
             return None
 
     def add_data(self, data):
-        if data[1:] != [0, 0, 0, 0, 0, 0] and self.is_recording:  # use a slice to ingore the timestamp
+        if data[1:4] != [0, 0, 0] and self.is_recording:  # non zero acceleration means sensors are working
             # pass empty data
             self.data_queue.put(data)
 
@@ -58,7 +59,7 @@ class IMU(object):
         """
         data = self.get_first_data_or_none()
         if data is not None:
-            self.live_plot.update(data[1:4])
+            self.live_plot.update(np.array(data[10:13]) * 180 / np.pi)
             self.live_plot.draw()
         self.steps += 1
 

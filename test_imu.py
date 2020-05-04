@@ -15,10 +15,16 @@ def get_random_device_data():
         int(1000 * time.time()),  # [ms]
         random.gauss(0, 1),  # ax
         random.gauss(0, 1),  # ay
-        random.gauss(0, 1),  # az
+        random.gauss(0, 1) - 9.8,  # az
+        random.gauss(0, 1),  # ax_lin
+        random.gauss(0, 1),  # ay_lin
+        random.gauss(0, 1),  # az_lin
         random.gauss(0, 1),  # gx
         random.gauss(0, 1),  # gy
         random.gauss(0, 1),  # gz
+        random.gauss(0, 1),  # rx
+        random.gauss(0, 1),  # ry
+        random.gauss(0, 1),  # rz
     ]
 
 
@@ -31,7 +37,7 @@ class TestImu(unittest.TestCase):
 
     def test_ignore_empty_data(self):
         self.assertRaises(queue.Empty, self.imu.data_queue.get_nowait)
-        self.imu.add_data([1, 0, 0, 0, 0, 0, 0])
+        self.imu.add_data([1] + 12 * [0])
         self.assertRaises(queue.Empty, self.imu.data_queue.get_nowait)
 
     def test_last_data(self):

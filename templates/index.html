@@ -6,6 +6,22 @@
     <script src="//cdnjs.cloudflare.com/ajax/libs/socket.io/2.2.0/socket.io.js" integrity="sha256-yr4fRk/GU1ehYJPAs8P4JlTgu0Hdsp4ZKrx8bDEDC3I=" crossorigin="anonymous"></script>
     <script type="text/javascript" charset="utf-8">
         $(document).ready(function() {
+            function logMessage(text) {
+                $('#log').append('<br>' + $('<div/>').text(text).html());
+            };
+
+            Promise.all([navigator.permissions.query({ name: "accelerometer" }),
+                        navigator.permissions.query({ name: "magnetometer" }),
+                        navigator.permissions.query({ name: "gyroscope" })])
+                    .then(results => {
+                        if (results.every(result => result.state === "granted")) {
+                        sensor.start();
+                            logMessage("Client: I have access to all sensors.");
+                        } else {
+                            logMessage("No permissions to use AbsoluteOrientationSensor.");
+                        }
+            });
+
             // Connect to the Socket.IO server.
             // The connection URL has the following format, relative to the current page:
             //     http[s]://<domain>:<port>[/<namespace>]
@@ -14,10 +30,6 @@
             socket.on('connect', function() {
                 socket.sendBuffer = [];  // empty buffer in case the server is restarted while client is still accumulating messages
             });
-
-            function logMessage(text) {
-                $('#log').append('<br>' + $('<div/>').text(text).html());
-            };
 
             // Event handler for server sent data.
             socket.on('server_response', function(msg, cb) {
@@ -36,13 +48,19 @@
             var ax = 0;
             var ay = 0;
             var az = 0;
+            var ax_lin = 0;
+            var ay_lin = 0;
+            var az_lin = 0;
             var gx = 0;
             var gy = 0;
             var gz = 0;
+            var rx = 0;
+            var ry = 0;
+            var rz = 0;
 
             var sendDataLoop;
             function sendData() {
-                socket.emit('incoming_data', {data: [Date.now(), ax, ay, az, gx, gy, gz]});
+                socket.emit('incoming_data', {data: [Date.now(), ax, ay, az, ax_lin, ay_lin, az_lin, gx, gy, gz, rx, ry, rz]});
             };
             function startSending(sendInterval) {
                 logMessage('Client: Sending data with interval ' + sendInterval + ' ms');
@@ -87,8 +105,26 @@
                 }));
                 gyroscope.start();
 
-            } else if ('DeviceMotionEvent' in window) {
-                document.getElementById('moApi').innerHTML = 'Device Motion API';
+                // https://developer.mozilla.org/en-US/docs/Web/API/OrientationSensor
+                let options = { frequency: 60, referenceFrame: 'device' };  // if sendInterval is 20ms, then we need to refresh at 50Hz at least
+                let orientation = new AbsoluteOrientationSensor(options);
+                orientation.addEventListener('reading', e => {
+                    var s = Math.sqrt(1 - (orientation.quaternion.w * orientation.quaternion.w));
+                    orientationHandler({
+                        x: orientation.quaternion.x / s,
+                        y: orientation.quaternion.y / s,
+                        z: orientation.quaternion.z / s,
+                    });
+                });
+                orientation.addEventListener('error', error => {
+                    if (event.error.name == 'NotReadableError') {
+                        logMessage("Orientation sensor is not available.");
+                    }
+                });
+                sensor.start();
+
+            } else if ('DeviceMotionEvent' in window && 'DeviceOrientationEvent' in window) {
+                document.getElementById('moApi').innerHTML = 'Device Motion/Orientation API';
 
                 var onDeviceMotion = function (eventData) {
                     accelerationHandler(eventData.acceleration, 'moAccel');
@@ -97,15 +133,31 @@
                     intervalHandler(eventData.interval);
                 }
                 window.addEventListener('devicemotion', onDeviceMotion, false);
+
+                // https://developer.mozilla.org/en-US/docs/Web/API/DeviceOrientationEvent
+                var onDeviceOrientation = function (eventData) {
+                    orientationHandler({
+                        x: eventData.beta * Math.PI / 180,
+                        y: eventData.gamma * Math.PI / 180,
+                        z: eventData.alpha * Math.PI / 180,
+                    });
+                }
+                window.addEventListener('deviceorientation', onDeviceOrientation, false);
             } else {
                 document.getElementById('moApi').innerHTML = 'No Accelerometer & Gyroscope API available';
             }
 
             function accelerationHandler(acceleration, targetId) {
                 var info, xyz = "[X, Y, Z]";
-                ax = acceleration.x;
-                ay = acceleration.y;
-                az = acceleration.z;
+                if (targetId == 'moAccel') { // excluding gravity
+                    ax_lin = acceleration.x;
+                    ay_lin = acceleration.y;
+                    az_lin = acceleration.z;
+                } else {
+                    ax = acceleration.x;
+                    ay = acceleration.y;
+                    az = acceleration.z;
+                }
 
                 info = xyz.replace("X", acceleration.x && acceleration.x.toFixed(3));
                 info = info.replace("Y", acceleration.y && acceleration.y.toFixed(3));
@@ -123,6 +175,18 @@
                 info = info.replace("Y", rotation.beta && rotation.beta.toFixed(3));
                 info = info.replace("Z", rotation.gamma && rotation.gamma.toFixed(3));
                 document.getElementById("moRotation").innerHTML = info;
+            }
+
+            function orientationHandler(r) {
+                var info, xyz = "[X, Y, Z]";
+                rx = r.x;
+                ry = r.y;
+                rz = r.z;
+
+                info = xyz.replace("X", rx && rx.toFixed(3));
+                info = info.replace("Y", ry && ry.toFixed(3));
+                info = info.replace("Z", rz && rz.toFixed(3));
+                document.getElementById("moOrientation").innerHTML = info;
             }
 
             function intervalHandler(interval) {
@@ -156,6 +220,10 @@
         <tr>
             <td>rotation rate</td>
             <td id="moRotation"></td>
+        </tr>
+        <tr>
+            <td>abs orientation</td>
+            <td id="moOrientation"></td>
         </tr>
         <tr>
             <td>interval (ms)</td>
