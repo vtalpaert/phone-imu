@@ -24,21 +24,6 @@ We will stream the phone accelerometer and gyroscope data to the computer and ex
 
 We will turn the internal accelerometer, gyroscope and magnetometer in an Inertial Measurement Unit as an introduction to robotics.
 You will be measuring the relative position of your device through sensor fusion and use it to measure distances at home.
-The difficulty will go crescendo with different tasks :
-Task 0 dimension : the compass
-Measure the device absolute orientation by using both the angular velocity and the magnetometer.
-
-### Task 1 dimension : basic ruler
-
-Move your device on a flat surface like a table and measure its length. You can easily experimentally verify using an IRL ruler.
-
-### Task 2 dimensions : circular movement
-
-On a flat surface, move your device randomly and back to the original position. Is your error within a few centimeters ? You got it !
-
-### Task 3 dimensions : free displacement
-
-The hardest task. Move your IMU freely and randomly in space to measure distances, or go back to the original position and observe the error.
 
 ## Deliverables
 
@@ -54,7 +39,7 @@ L6: 15 May 13.30-15.30
 
 L7: 18 May 8.30-11.45
 
-L8: 22 May 13.30-15.30
+L8: 22 May 13.30-15.30 EXAM
 
 ### Instruction
 
